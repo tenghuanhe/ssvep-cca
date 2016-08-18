@@ -1,0 +1,159 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+\begin{document}
+
+\section{Background}
+
+\subsection{\emph{SSVEP} and its detection methods}
+
+Steady-state visually evoked potential \emph{SSVEP} has been commonly adopted for functioning brain-computer interface \emph{BCIs}.
+
+There has been many different methods for detecting the presence of \emph{SSVEP}.
+
+\begin{itemize}
+  \item \emph{PSDA}, One of the most popular and widely used detection method is using a power spectral density analysis \emph{PSDA}.
+
+  \item \emph{CCA}, Lately using canonical correlation analysis seems to have some promising improvements and advantages compared to traditional \emph{SSVEP} detection methods.
+\end{itemize}
+
+\emph{CCA} identifies the \emph{SSVEP} frequency by finding the maximal correlation $\rho_{f}$ between multi-channel EEG signals and predefined sinusoidal reference signals associated with each flickering frequency.
+
+The conventional \emph{CCA}-based \emph{SSVEP} detection can be expressed as following:
+
+$$\hat{f_s} = arg max \rho_{f} = arg max \rho(X, Y_{f})$$
+$$Y_{f} = [sin(2\pi ft), cos(2\pi ft)]$$
+
+where \emph{X} is the \emph{N}-channel \emph{SSVEP} signal and $Y_{f}$ represents the reference signal corresponding to frequency \emph{f}.
+
+\subsection{Problem with \emph{CCA}}
+
+However, the elicited EEG signals may not have the most component at the nominal frequency but at the frequency with little deviation because of hardware or software errors in the implementation of \emph{SSVEP} stimulation.
+
+So there will also be error with correlation $\rho{f}$ calculated, which can influence the detection of frequency.
+
+\section{Our work}
+
+Our work is to decide how does the frequency deviation $\Delta f$ can influence $\rho_{f}$, which is eventually applied to determine \emph{SSVEP} frequency.
+
+We will calculate $\rho_{f}$ by the original definition of \emph{CCA} in an analytical way instead of numerical way such as using Matlab.
+
+\subsection{Derivation}
+
+Assume that two nominal frequencies $f_1$ and $f_2$ window length T, and the EEG signals corresponding to the $f_s$
+
+We denote correlation between $f_1$ and $f_s$ as $\rho_{1}$
+
+and denote correlation between $f_2$ and $f_s$ as $\rho_{2}$
+
+Now we will take frequency $f_1$ as an example to calculate the correlation between EEG signal and corresponding constructed template signal.
+
+Then the template signal for frequency $f_1$ can be denoted as
+$$\mathbf{x} = [sin(2\pi f_1t), cos(2\pi f_1t)]$$
+and the EEG signal can be denoted as
+$$\mathbf{y} = [sin(2\pi f_st), cos(2\pi f_st)]$$
+
+By the definition of Canonical Correlation Analysis, we want to find the best matched pair of linear combinations on the $\mathbf{x}$ and $\mathbf{y}$ sides that yield the largest coefficient of correlation.
+
+We denote the matrices of coefficients of the linear combinations by $\mathbf{a} = {[a_{1}, a_{2}]}^{T}$ (on the $x$ side), and $\mathbf{b} = {[b_{1}, b_{2}]}^{T}$ (on the $y$ side). If matrices $\mathbf{u}$ and $\mathbf{v}$ denote the linear combinations evaluated for each signal, we have
+$$\mathbf{u} = \mathbf{xa},\mathbf{v} = \mathbf{yb}$$
+then
+\begin{align}
+\mathbf{u}  =& a_{1}sin(2\pi f_1t) + a_{2}cos(2\pi f_1t) \nonumber  \\
+            =& \sqrt{{a_{1}}^{2} + {a_{2}}^{2}}sin(2\pi f_1t + \alpha)
+\end{align}
+\begin{align}
+\mathbf{v}  =& b_{1}sin(2\pi f_st) + b_{2}cos(2\pi f_st) \nonumber  \\
+            =& \sqrt{{b_{1}}^{2} + {b_{2}}^{2}}sin(2\pi f_st + \beta)
+\end{align}
+where $\alpha = \arctan{\frac {a_2} {a_1}}$, $\beta = \arctan{\frac {b_2} {b_1}}$.
+$\mathbf{u}$ and $\mathbf{v}$ are actually one-dimensional vectors.
+
+the correlation between $\mathbf{u}$ and $\mathbf{v}$ is given by
+$$\rho_1 = \frac{cov(\mathbf{u},\mathbf{v})}{\sigma_\mathbf{u} \cdot \sigma_\mathbf{v}}$$
+
+We can note that $\rho$ is not affected by a rescaling of $u$ and $v$, i.e., a multiplication of $\mathbf{u}$ or $\mathbf{v}$ by the scalar $\alpha$ does not change the value of $\rho_1$ in the equation. Since the choice of scaling is arbitrary, we therefore leave out the efficient  $\sqrt{{a_{1}}^{2} + {a_{2}}^{2}}$ and  $\sqrt{{b_{1}}^{2} + {b_{2}}^{2}}$ to calculate the correlation $\rho_1$
+
+let $\hat{u} = sin(2\pi f_1t + \alpha)$, $\hat{v} = sin(2\pi f_st + \beta)$
+
+then,
+\begin{align}
+\rho_1  =& \frac{cov(\mathbf{u},\mathbf{v})}{\sigma_\mathbf{u} \cdot \sigma_\mathbf{v}} \nonumber \\
+        =& \frac{cov(\hat{u},\hat{v})}{\sigma_{\hat{u}} \cdot \sigma_{\hat{v}}} \nonumber \\
+        =& \frac{E[sin(2\pi f_1t + \alpha) \cdot sin(2\pi f_st + \beta)]} {\frac{\sqrt{2}}{2} \cdot \frac{\sqrt{2}}{2}} \nonumber \\
+        =& \frac{2}{T}\int_0^T sin(2\pi f_1t + \alpha) \cdot sin(2\pi f_st + \beta) dt \nonumber \\
+        =& \frac{2}{T}\int_0^T \frac{1}{2}cos[2\pi (f_1 - f_s)t + \alpha - \beta] - cos[2\pi (f_1 + f_s)t + \alpha + \beta] dt \nonumber \\
+        =& \frac{1}{T}\int_0^T cos[2\pi (f_1 - f_s)t + \alpha - \beta] dt - \frac{1}{T}\int_0^T cos[2\pi (f_1 + f_s)t + \alpha + \beta] dt \nonumber \\
+        =& \frac{sin(2\pi (f_1 - f_s)T + \alpha - \beta) - sin(\alpha - \beta)}{2\pi (f_1 - f_s)T} - \frac{sin(2\pi (f_1 + f_s)T + \alpha + \beta) - sin(\alpha + \beta)}{2\pi (f_1 + f_s)T} \nonumber
+\end{align}
+
+We maximize $\rho_1$ by first taking derivatives with respect to $\alpha$ and $\beta$:
+
+\begin{align*}
+\frac{\partial \rho_1}{\partial \alpha} = \frac{cos[2\pi (f_1 - f_s)T + \alpha - \beta] - cos(\alpha - \beta)}{2\pi (f_1 - f_s)T} - \frac{cos[2\pi (f_1 + f_s)T + \alpha + \beta] - cos(\alpha + \beta)}{2\pi (f_1 + f_s)T} = 0
+\end{align*}
+
+\begin{align*}
+\frac{\partial \rho_1}{\partial \beta} = \frac{-cos[2\pi (f_1 - f_s)T + \alpha - \beta] + cos(\alpha - \beta)}{2\pi (f_1 - f_s)T} - \frac{cos[2\pi (f_1 + f_s)T + \alpha + \beta] - cos(\alpha + \beta)}{2\pi (f_1 + f_s)T} = 0
+\end{align*}
+
+Through comparison of the above two equation we can obtain:
+\begin{align*}
+    cos[2\pi (f_1 - f_s)T + \alpha - \beta] = cos(\alpha - \beta)
+\end{align*}
+
+\begin{align*}
+    cos[2\pi (f_1 + f_s)T + \alpha + \beta] = cos(\alpha + \beta)
+\end{align*}
+
+According to the nature of trigonometric functions, we have
+$$2\pi (f_1 - f_s)T + \alpha - \beta = \alpha - \beta + 2k_1\pi$$
+or
+$$2\pi (f_1 - f_s)T + \alpha - \beta + \alpha - \beta = 2k_1\pi$$
+where $k_1 = 1,2,3...$
+
+obviously, the first result does not make sense,
+similarly we have
+$$2\pi (f_1 + f_s)T + \alpha + \beta + \alpha + \beta = 2k_2\pi$$
+$$\alpha - \beta = k_1\pi - (f_1 - f_s)T\pi$$
+and
+$$\alpha + \beta = k_2\pi - (f_1 + f_s)T\pi$$
+where $k_1 = 1,2,3...$ and $k_2 = 1,2,3...$
+
+at last, we have the last correlation
+\begin{align*}
+\rho_1  =& \frac{sin[k_1\pi + (f_1 - f_s)T\pi] - sin[k_1\pi - (f_1 - f_s)T\pi]}{2\pi (f_1 - f_s)T} - \frac{sin[k_2\pi + (f_1 + f_s)T\pi] - sin[k_2\pi - (f_1 + f_s)T\pi]}{2\pi (f_1 + f_s)T} \nonumber \\
+        =& ||\frac{sin[(f_1 - f_s)T\pi]}{(f_1 - f_s)T\pi}| - |\frac{sin[(f_1 + f_s)T\pi]}{(f_1 + f_s)T\pi}|| \nonumber
+\end{align*}
+
+$$\rho_2 = ||\frac{sin[(f_2 - f_s)T\pi]}{(f_2 - f_s)T\pi}| - |\frac{sin[(f_2 + f_s)T\pi]}{(f_2 + f_s)T\pi}||$$
+
+$$\rho = ||\frac{sin[(f - f_s)T\pi]}{(f - f_s)T\pi}| - |\frac{sin[(f + f_s)T\pi]}{(f + f_s)T\pi}||$$
+
+We can get the general results as following,
+
+$$\rho = |\frac{sin[(f - f_s)T\pi]}{(f - f_s)T\pi}|$$
+
+
+\begin{align*}
+\frac{\partial \rho}{\partial f} = \frac{sin[(f - f_s)T\pi] - cos[(f - f_s)T\pi](f - f_s)T\pi}{{(f - f_s)^2}T\pi}
+\end{align*}
+
+and the sensitivity function is
+
+\begin{align*}
+Sensitivity =& \frac{f_s}{f - f_s} - \frac{f_s T \pi}{tan[(f - f_s)T\pi]}   \nonumber
+            =& f_s \left (\frac{1}{f - f_s} - T \pi  \cot [T \pi (f - f_s)]\right )
+\end{align*}
+
+
+\section{Result}
+$$\rho = |\frac{sin[(f_t - f)T\pi]}{(f_t - f)T\pi}|$$
+\begin{align*}
+\frac{\partial \rho}{\partial f_t} = \frac{sin[(f_t - f)T\pi] - cos[(f_t - f)T\pi](f_t - f)T\pi}{{(f_t - f)^2}T\pi}
+\end{align*}
+
+and the sensitivity function with respect to parameter $f_t$ is
+Sensitivity =
+
+\end{document}
